@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "sound.h"
 
 void jouer_son(const char *fichier) {
     char cmd[200];
@@ -11,4 +12,3 @@ void jouer_son(const char *fichier) {
 void arreter_sons(void) {
     system("kill $(pidof play) 2>/dev/null");
 }
-

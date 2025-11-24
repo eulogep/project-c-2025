@@ -1,0 +1,41 @@
+Rapport de Projet - Simulateur de Parking
+=========================================
+
+Étudiant : [Votre Nom]
+Classe : 3A - ESIEA
+Projet : Simulateur de Parking en C
+
+1. Introduction
+---------------
+Ce projet avait pour but de créer un simulateur de parking fonctionnel en langage C, fonctionnant sous Linux en mode console. L'objectif était de mettre en pratique les notions avancées vues en cours : pointeurs, structures, allocation dynamique, et gestion de fichiers, tout en créant une application interactive et visuelle sans bibliothèques graphiques externes.
+
+2. Architecture du Code
+-----------------------
+J'ai choisi de découper le code en modules distincts pour respecter le principe de séparation des responsabilités :
+- **Map** : Gère le chargement et la modification de la grille du parking (barrières, murs).
+- **Vehicle** : Gère la structure des véhicules, leur apparence ASCII, et leur mouvement. J'ai utilisé une liste chaînée pour stocker les véhicules actifs, ce qui permet d'en avoir un nombre illimité (dans la limite de la mémoire).
+- **Engine** : Le cœur du jeu. Il gère la boucle principale, le temps, les apparitions de véhicules (spawning), et la logique des barrières.
+- **Display** : S'occupe de tout l'affichage ANSI. J'ai appris à utiliser les codes d'échappement pour déplacer le curseur et mettre de la couleur.
+- **Input** : Gère les entrées clavier de manière non bloquante (via `termios` et `select`), essentiel pour un jeu en temps réel.
+
+3. Difficultés Rencontrées et Solutions
+---------------------------------------
+*   **Affichage fluide** : Au début, utiliser `system("clear")` faisait clignoter l'écran horriblement. J'ai résolu cela en n'utilisant que le code `\033[2J` au début, puis en déplaçant le curseur avec `\033[y;xH` pour écraser les caractères.
+*   **Véhicules Multi-cellules** : Passer d'un simple caractère `>` à une forme 3x3 a compliqué la détection de collision. J'ai dû écrire une fonction qui vérifie si *n'importe quelle partie* de la carrosserie touche un mur ou un autre véhicule. Au début, les voitures traversaient les murs par l'arrière, j'ai corrigé ça en vérifiant toute la zone future.
+*   **Gestion du temps** : Faire bouger les véhicules à des vitesses différentes tout en gardant une boucle fluide était dur. J'ai utilisé `nanosleep` pour réguler la boucle principale (environ 10 FPS).
+
+4. Améliorations Apportées
+--------------------------
+Par rapport au cahier des charges initial, j'ai ajouté :
+- Des véhicules avec des formes distinctes (Voiture, Camion, Moto) en ASCII art.
+- Des barrières qui s'ouvrent et se ferment visuellement (le caractère `|` disparaît).
+- Un mode manuel (bonus) qui permet de conduire soi-même une voiture.
+- Un système de tickets simple qui calcule un prix fictif à la sortie.
+
+5. Conclusion
+-------------
+Ce projet m'a permis de consolider ma compréhension de la gestion de la mémoire en C (malloc/free). J'ai aussi appris l'importance d'une bonne structure de fichiers dès le début. Si je devais continuer, j'ajouterais une vraie IA de pathfinding (A*) car pour l'instant les véhicules avancent un peu bêtement et rebondissent.
+
+6. Bilan Personnel
+------------------
+C'est satisfaisant de voir un résultat visuel "vivant" à partir de lignes de code abstraites. La gestion des listes chaînées est devenue beaucoup plus naturelle pour moi.

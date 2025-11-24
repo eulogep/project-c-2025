@@ -40,6 +40,10 @@ MAP* charger_map(const char *fichier) {
         int len = strlen(ligne);
         if (ligne[len-1] == '\n') ligne[len-1] = '\0';
         strncpy(m->grille[y], ligne, m->largeur);
+        // Pad with spaces if line is shorter than max_width
+        for (int x = strlen(ligne); x < m->largeur; x++) {
+             m->grille[y][x] = ' ';
+        }
         y++;
     }
 
@@ -70,21 +74,14 @@ void set_case(MAP *m, int x, int y, char c) {
     }
 }
 
-int est_barriere(int x, int y) {
-    (void)x;
-    (void)y;
-    return 0;
+void toggle_barriere(MAP *m, int x, int y, int open) {
+    if (!m) return;
+    // We expect a barrier vertical line '|'
+    if (x >= 0 && x < m->largeur && y >= 0 && y < m->hauteur) {
+        if (open) {
+            if (m->grille[y][x] == '|') m->grille[y][x] = ' ';
+        } else {
+             if (m->grille[y][x] == ' ') m->grille[y][x] = '|';
+        }
+    }
 }
-
-int est_entree(int x, int y) {
-    (void)x;
-    (void)y;
-    return 0;
-}
-
-int est_sortie(int x, int y) {
-    (void)x;
-    (void)y;
-    return 0;
-}
-

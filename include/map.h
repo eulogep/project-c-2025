@@ -14,9 +14,6 @@ MAP* charger_map(const char *fichier);
 void liberer_map(MAP *m);
 char get_case(MAP *m, int x, int y);
 void set_case(MAP *m, int x, int y, char c);
-int est_barriere(int x, int y);
-int est_entree(int x, int y);
-int est_sortie(int x, int y);
+void toggle_barriere(MAP *m, int x, int y, int open);
 
 #endif
-

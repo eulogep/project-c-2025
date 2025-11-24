@@ -9,7 +9,7 @@ SOURCES = $(wildcard $(SRCDIR)/*.c)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 TARGET = $(BINDIR)/parking
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 all: $(TARGET)
 
@@ -31,10 +31,9 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
-test: $(OBJDIR)/test_engine.o
-	$(CC) $(OBJDIR)/test_engine.o obj/map.o obj/vehicle.o obj/engine.o obj/display.o obj/input.o -o $(BINDIR)/test_engine
+test: $(OBJDIR)/test_engine.o $(filter-out $(OBJDIR)/main.o, $(OBJECTS))
+	$(CC) $(OBJDIR)/test_engine.o $(filter-out $(OBJDIR)/main.o, $(OBJECTS)) -o $(BINDIR)/test_engine
 	./$(BINDIR)/test_engine
 
 $(OBJDIR)/test_engine.o: test_engine.c | $(OBJDIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c test_engine.c -o $(OBJDIR)/test_engine.o
-

@@ -23,9 +23,8 @@ typedef struct {
 void initialiser_jeu(ETAT_JEU *jeu, MODE_JEU mode);
 void boucle_jeu(ETAT_JEU *jeu, MAP *map, VEHICULE **liste_vehicules);
 void generer_vehicule_aleatoire(VEHICULE **liste, MAP *map, MODE_JEU mode, ETAT_JEU *jeu);
-void gerer_barrieres(ETAT_JEU *jeu, unsigned long int temps);
+void gerer_barrieres(ETAT_JEU *jeu, MAP *map, unsigned long int temps);
 float calculer_prix(unsigned long int temps_sejour);
 void detecter_collisions(VEHICULE *liste);
 
 #endif
-
