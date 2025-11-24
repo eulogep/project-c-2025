@@ -25,23 +25,71 @@ void reset_color(void) {
     printf("\033[0m");
 }
 
+static int is_connected(char c) {
+    return (c == '-' || c == '|' || c == '+');
+}
+
+void print_unicode_cell(MAP *m, int x, int y) {
+    char c = m->grille[y][x];
+
+    // Colors
+    if (c == '#') {
+        printf("\033[36m\u2588\033[0m"); // Cyan Full Block
+        return;
+    }
+    if (c == '|') {
+        // Red vertical barrier in specific zones, otherwise white line
+        // Barrier zones: Top Left (Exit) and Bottom Right (Entrance).
+        // x < 15 && y < 10 -> Exit Barrier?
+        // x > width-15 && y > height-10 -> Entrance Barrier?
+        if ((x < 15 && y < 10) || (x > m->largeur - 15 && y > m->hauteur - 10)) {
+             printf("\033[31m\u2502\033[0m"); // Red Vertical
+        } else {
+             printf("\033[37m\u2502\033[0m"); // White Vertical
+        }
+        return;
+    }
+    if (c == '-') {
+        printf("\033[37m\u2500\033[0m"); // White Horizontal
+        return;
+    }
+    if (c == '+') {
+        // Context aware intersection
+        int n = (y > 0 && is_connected(m->grille[y-1][x]));
+        int s = (y < m->hauteur-1 && is_connected(m->grille[y+1][x]));
+        int e = (x < m->largeur-1 && is_connected(m->grille[y][x+1]));
+        int w = (x > 0 && is_connected(m->grille[y][x-1]));
+
+        printf("\033[37m"); // White
+
+        if (n && s && e && w) printf("\u253C"); // Cross ┼
+        else if (s && e && w) printf("\u252C"); // T down ┬
+        else if (n && e && w) printf("\u2534"); // T up ┴
+        else if (n && s && e) printf("\u251C"); // T right ├
+        else if (n && s && w) printf("\u2524"); // T left ┤
+        else if (s && e) printf("\u250C"); // Corner Top-Left ┌
+        else if (s && w) printf("\u2510"); // Corner Top-Right ┐
+        else if (n && e) printf("\u2514"); // Corner Bottom-Left └
+        else if (n && w) printf("\u2518"); // Corner Bottom-Right ┘
+        else if (e || w) printf("\u2500"); // Horizontal
+        else if (n || s) printf("\u2502"); // Vertical
+        else printf("+");
+
+        printf("\033[0m");
+        return;
+    }
+
+    // Other chars
+    if (c == 'T' || c == '^' || c == '>' || c == '<') printf("\033[33m%c\033[0m", c);
+    else putchar(c);
+}
+
 void afficher_map(MAP *m) {
     if (!m) return;
     for (int y = 0; y < m->hauteur; y++) {
         gotoxy(MAP_START_X, MAP_START_Y + y);
         for (int x = 0; x < m->largeur; x++) {
-            char c = m->grille[y][x];
-            // Colors:
-            // Walls (#): Cyan
-            // Barriers (|): Red
-            // Parking lines (+, -): White or Grey
-            // Exit/Entrance signs: Special?
-
-            if (c == '#') printf("\033[36m%c\033[0m", c); // Cyan walls
-            else if (c == '|') printf("\033[31m%c\033[0m", c); // Red barriers
-            else if (c == '+' || c == '-') printf("\033[37m%c\033[0m", c); // White lines
-            else if (c == 'T' || c == '^' || c == '>' || c == '<') printf("\033[33m%c\033[0m", c); // Yellow arrows/indicators
-            else putchar(c);
+            print_unicode_cell(m, x, y);
         }
     }
 }
@@ -49,10 +97,8 @@ void afficher_map(MAP *m) {
 void afficher_vehicule(VEHICULE *v) {
     if (!v) return;
 
-    // Cycle colors based on pointer address or ID to give variety
-    // Or use code_couleur
     int color_code = (v->code_couleur > 0) ? v->code_couleur : (int)(((unsigned long)v % 6) + 31);
-    if (v->etat == 'C') color_code = 31; // Red if crashed
+    if (v->etat == 'C') color_code = 31;
 
     printf("\033[%dm", color_code);
 
@@ -62,8 +108,10 @@ void afficher_vehicule(VEHICULE *v) {
             if (c == 0) break;
             if (c != ' ' && c != '\0') {
                 gotoxy(MAP_START_X + v->posx + j, MAP_START_Y + v->posy + i);
-                // Use block character for body if ASCII art is generic, or print char
-                putchar(c);
+                // Print solid block for vehicle body if it's # or similar, or just the char
+                // Since our vehicles are now ###, we can print block.
+                if (c == '#') printf("\u2588");
+                else putchar(c);
             }
         }
     }
@@ -80,35 +128,14 @@ void afficher_vehicules(VEHICULE *liste) {
 
 void rafraichir_zone(int x, int y, int w, int h, MAP *m, VEHICULE *liste) {
     (void)x; (void)y; (void)w; (void)h; (void)m; (void)liste;
-    // Not strictly needed if we redraw efficiently or simple clear/redraw
-    // Implementing partial refresh is complex with colors.
 }
 
 void afficher_interface(int tickets, float prix_total, int mode) {
-    // Exit Box (Top Left)
-    // Map starts at (2,2)
-    // Box needs to be drawn over the map area reserved for it?
-    // Or just let the map be the background.
-    // Map text has "SORTIE" and "CAISSE".
-    // We can overwrite the "CAISSE" text area with values if we want.
-
-    // Hardcoded positions based on new map.txt
-    // "TOTAL A PAYER :" box at top left
     gotoxy(MAP_START_X + 2, MAP_START_Y + 3);
     printf("\033[36mTOTAL A PAYER : \033[0m");
     gotoxy(MAP_START_X + 2, MAP_START_Y + 4);
     printf("\033[33m%6.2f EUR    \033[0m", prix_total);
 
-    // Entrance Box (Bottom Right)
-    // "BONJOUR :"
-    // "PRENEZ VOTRE TICKET"
-    // Map height approx 40?
-    // Let's find bottom right coordinates.
-    // Map width 85, Height ~40?
-    // I need to know map dimensions.
-    // Assuming bottom right is around (70, 35) based on map.txt
-
-    // We can use a fixed position for "Status" or "Mode" info
     gotoxy(5, 1);
     char mode_str[20];
     switch (mode) {
@@ -118,8 +145,4 @@ void afficher_interface(int tickets, float prix_total, int mode) {
         default: strcpy(mode_str, "INCONNU"); break;
     }
     printf("Mode: %s | Tickets Entree: %d", mode_str, tickets);
-
-    // Ticket Box area in map.txt is near "ENTREE"
-    // Let's just overlay some text there if we can find it,
-    // otherwise just rely on the static map text and maybe a blinking "PUSH BUTTON"
 }
