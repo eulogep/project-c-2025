@@ -1,43 +1,33 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <termios.h>
 #include <unistd.h>
+#include <termios.h>
 #include <fcntl.h>
-#include <sys/select.h>
 #include "input.h"
 
-static struct termios old_termios;
+static struct termios oldt, newt;
 
-void configurer_terminal(void) {
-    struct termios new_termios;
-    tcgetattr(STDIN_FILENO, &old_termios);
-    new_termios = old_termios;
-    new_termios.c_lflag &= ~(ICANON | ECHO);
-    new_termios.c_cc[VMIN] = 0;
-    new_termios.c_cc[VTIME] = 0;
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+void input_init(void) {
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 }
 
-void restaurer_terminal(void) {
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
+void input_cleanup(void) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
-int key_pressed(void) {
-    fd_set readfds;
-    struct timeval timeout;
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
-    return select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout) > 0;
-}
-
-char lire_touche(void) {
-    char c = 0;
-    if (read(STDIN_FILENO, &c, 1) == 1) {
-        return c;
+int kbhit(void) {
+    int ch = getchar();
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
     }
     return 0;
 }
 
+int read_char(void) {
+    return getchar();
+}

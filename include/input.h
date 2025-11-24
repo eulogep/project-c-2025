@@ -1,10 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-int key_pressed(void);
-char lire_touche(void);
-void configurer_terminal(void);
-void restaurer_terminal(void);
+void input_init(void);
+void input_cleanup(void);
+int kbhit(void);
+int read_char(void);
 
 #endif
-

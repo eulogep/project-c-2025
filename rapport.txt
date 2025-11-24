@@ -1,0 +1,62 @@
+Rapport de Projet - Simulateur de Parking C
+ESIEA - 3A
+
+---
+
+## 1. Introduction
+Ce projet a pour but de réaliser un simulateur de parking en langage C. L'objectif était de mettre en pratique les concepts vus en cours : structures, pointeurs, listes chaînées, lecture de fichiers, et compilation modulaire avec Makefile. Nous devions également implémenter un mode bonus graphique avec la bibliothèque ncurses.
+
+## 2. Conception et Architecture
+
+### Structures de données
+Nous avons choisi de structurer le projet autour de plusieurs entités clés :
+- **Map (`struct Map`)** : Contient la grille du parking (tableau 2D de char), la largeur et la hauteur. Elle est chargée dynamiquement depuis `plan.txt`.
+- **Véhicule (`struct Vehicule`)** : Représente une voiture. C'est un élément d'une liste chaînée simple. Chaque véhicule possède une position (x, y), une direction, un type (IA ou Joueur) et une heure d'entrée pour le calcul du tarif.
+- **Game (`struct Game`)** : Structure centrale qui contient tout l'état du jeu (pointeur vers la Map, pointeur vers la liste des véhicules, score, mode de jeu, etc.).
+
+### Organisation des fichiers
+Le code est découplé pour assurer la maintenabilité :
+- `map.c` s'occupe uniquement du chargement et de l'accès aux cases.
+- `vehicules.c` gère la création et la suppression des noeuds de la liste chaînée.
+- `game.c` contient la boucle de jeu, la physique (déplacements) et le rendu.
+- `input.c` gère la capture du clavier en mode "raw" (non bloquant) pour Linux.
+- `main.c` est le point d'entrée.
+
+## 3. Fonctionnalités Implémentées
+
+### Modes de jeu
+1. **Mode Fluide** : Les véhicules apparaissent modérément.
+2. **Mode Chargé** : Fréquence d'apparition élevée (tous les 5 ticks).
+3. **Mode Manuel** : Le joueur contrôle un véhicule spécifique.
+
+### Physique et Collisions
+Les véhicules avancent tout droit par défaut. S'ils rencontrent un obstacle (mur ou autre véhicule), ils changent de direction aléatoirement.
+Le joueur ne peut pas traverser les murs ni les autres véhicules.
+
+### Affichage
+- **ASCII** : Utilisation des codes couleurs ANSI (printf) pour différencier les éléments (Murs rouges, Places vertes, etc.).
+- **Ncurses** : Une vue plus propre avec des fenêtres/panneaux simulés, respectant la demande d'un visuel avec panneaux "SORTIE" et "ENTREE".
+
+## 4. Difficultés Rencontrées
+
+### Gestion du Clavier Non-Bloquant
+La fonction standard `scanf` ou `getchar` bloque le programme en attendant une touche. Pour une simulation temps réel, ce n'est pas acceptable.
+**Solution** : Nous avons utilisé `termios` pour passer le terminal en mode non canonique et `fcntl` pour le rendre non bloquant (`O_NONBLOCK`). Cela permet à la boucle de jeu de tourner même si l'utilisateur ne touche à rien.
+
+### Ncurses vs Stdout
+Mélanger `printf` et `ncurses` est impossible.
+**Solution** : Nous avons utilisé une compilation conditionnelle et un flag runtime (`--ncurses`). Le code de rendu est séparé en `draw_ascii` et `draw_ncurses` au sein de `game.c`.
+
+### Gestion de la Mémoire
+Au début, nous avions des fuites de mémoire lors de la suppression des véhicules sortants.
+**Solution** : Nous avons été vigilants sur les `free()` dans la fonction `supprimer_vehicule` et lors du nettoyage final (`liberer_map`, `liberer_vehicules`).
+
+## 5. Limites et Améliorations
+- **IA Basique** : Les voitures se déplacent de manière aléatoire quand elles sont bloquées. Une amélioration serait d'implémenter un algorithme de pathfinding (A* ou Dijkstra) pour qu'elles aillent se garer intelligemment.
+- **Collisions** : Actuellement, les véhicules se bloquent juste. On pourrait imaginer une gestion plus fine (klaxon, destruction).
+
+## 6. Conclusion
+Ce projet a permis de consolider nos connaissances en C, notamment sur la gestion bas niveau (mémoire, terminal). La réalisation du mode graphique ncurses a été un défi intéressant pour comprendre comment créer des interfaces utilisateur en terminal.
+
+---
+Projet réalisé par Jules (IA Agent).

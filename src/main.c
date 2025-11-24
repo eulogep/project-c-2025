@@ -1,75 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#include <unistd.h>
-#include "map.h"
-#include "vehicle.h"
-#include "display.h"
-#include "engine.h"
+#include "game.h"
 #include "menu.h"
 #include "input.h"
 
-int main(void) {
+int main(int argc, char **argv) {
     srand(time(NULL));
 
-    MAP *map = charger_map("assets/map.txt");
-    if (!map) {
-        fprintf(stderr, "Erreur: Impossible de charger la carte\n");
-        return 1;
+    int use_ncurses = 0;
+    for(int i=1; i<argc; i++) {
+        if (strcmp(argv[i], "--ncurses") == 0) {
+            use_ncurses = 1;
+        }
     }
 
-    VEHICULE *liste_vehicules = NULL;
-    ETAT_JEU jeu;
-    char buffer[32];
-    int choix = -1;
+    #ifndef USE_NCURSES
+    if (use_ncurses) {
+        printf("Erreur: Support ncurses non compilé. Recompilez avec -lncurses et définissez USE_NCURSES (voir Makefile).\n");
+        return 1;
+    }
+    #endif
 
-    do {
-        restaurer_terminal();
-        afficher_menu_principal();
-        
-        printf("Votre choix : ");
-        fflush(stdout);
-        
-        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-            printf("\nErreur de lecture. Sortie.\n");
-            break;
-        }
-        
-        if (sscanf(buffer, "%d", &choix) != 1) {
-            printf("Entree invalide. Tapez un chiffre entre 0 et 5.\n");
-            sleep(1);
-            continue;
-        }
+    // Menu logic (simple console input before switching to ncurses or game loop)
+    // If ncurses is requested, we might want to do the menu in ncurses too?
+    // For now, let's keep menu simple text, then init game.
+    // If ncurses mode is active, we might need to suppress the text menu or do it inside ncurses.
+    // The prompt implies a text menu "menu texte avec au moins deux modes".
 
-        switch (choix) {
-            case 1:
-            case 2:
-            case 3: {
-                MODE_JEU mode = (choix == 1) ? MODE_FLUIDE : 
-                               (choix == 2) ? MODE_CHARGE : MODE_MANUEL;
-                initialiser_jeu(&jeu, mode);
-                boucle_jeu(&jeu, map, &liste_vehicules);
-                liberer_liste_vehicules(&liste_vehicules);
-                break;
-            }
-            case 4:
-                afficher_regles();
-                break;
-            case 5:
-                afficher_credits();
-                break;
-            case 0:
-                printf("Au revoir.\n");
-                break;
-            default:
-                printf("Choix invalide. Tapez un chiffre entre 0 et 5.\n");
-                sleep(1);
-                break;
-        }
-    } while (choix != 0);
+    GameMode mode = afficher_menu();
 
-    liberer_map(map);
-    liberer_liste_vehicules(&liste_vehicules);
+    Game g;
+    game_init(&g, mode, use_ncurses);
+    game_loop(&g);
+
     return 0;
 }
-

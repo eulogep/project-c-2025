@@ -1,6 +1,15 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -D_POSIX_C_SOURCE=200809L
-INCLUDES = -Iinclude
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -D_POSIX_C_SOURCE=200809L -Iinclude -O2
+LDFLAGS =
+
+# Check for ncurses availability
+HAS_NCURSES := $(shell echo "\#include <ncurses.h>" | $(CC) -E - >/dev/null 2>&1 && echo yes || echo no)
+
+ifeq ($(HAS_NCURSES),yes)
+    CFLAGS += -DUSE_NCURSES
+    LDFLAGS += -lncurses
+endif
+
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
@@ -14,10 +23,10 @@ TARGET = $(BINDIR)/parking
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) | $(BINDIR)
-	$(CC) $(OBJECTS) -o $(TARGET)
+	$(CC) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -30,11 +39,4 @@ clean:
 
 run: $(TARGET)
 	./$(TARGET)
-
-test: $(OBJDIR)/test_engine.o
-	$(CC) $(OBJDIR)/test_engine.o obj/map.o obj/vehicle.o obj/engine.o obj/display.o obj/input.o -o $(BINDIR)/test_engine
-	./$(BINDIR)/test_engine
-
-$(OBJDIR)/test_engine.o: test_engine.c | $(OBJDIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c test_engine.c -o $(OBJDIR)/test_engine.o
 
