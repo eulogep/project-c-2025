@@ -3,7 +3,23 @@
 Projet étudiant de 3ème année - ESIEA (S1)
 Auteurs : Jules (Assistant IA) pour l'étudiant
 
-Ce projet est une simulation de parking en console écrite en C standard. Il simule la gestion d'un parking avec des véhicules entrants et sortants, des barrières automatiques, et un système de paiement.
+## 🚨 DÉPANNAGE RAPIDE (ERREUR DE COMPILATION)
+
+Si vous rencontrez l'erreur suivante :
+```
+src/display.c:5:10: fatal error: display.h: No such file or directory
+```
+Cela signifie que le dossier `include` n'est pas trouvé par le compilateur.
+
+**SOLUTION :**
+1. Assurez-vous d'avoir extrait **tous** les fichiers et dossiers du ZIP, en conservant la structure.
+2. Vérifiez que vous avez bien le dossier `include` (contenant `display.h`, `engine.h`, etc.) au même niveau que le `Makefile` et le dossier `src`.
+3. Lancez la commande `ls -R` (ou regardez dans votre explorateur de fichiers) pour vérifier la présence de :
+   - `./Makefile`
+   - `./src/display.c`
+   - `./include/display.h`
+
+---
 
 ## 🚀 Fonctionnalités
 
@@ -57,7 +73,7 @@ Ce projet est une simulation de parking en console écrite en C standard. Il sim
 
 *   `src/` : Code source (.c)
 *   `include/` : En-têtes (.h)
-*   `assets/` : Fichiers de données (plan.txt, véhicules)
+*   `assets/` : Fichiers de données (map.txt, véhicules)
 *   `bin/` : Exécutable final
 *   `obj/` : Fichiers objets intermédiaires
 *   `Makefile` : Script de compilation
