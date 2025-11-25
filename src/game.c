@@ -347,51 +347,62 @@ static void draw_ascii(Game *g) {
 }
 
 #ifdef USE_NCURSES
+
+static void draw_fancy_box(int y, int x, int h, int w) {
+    // Draw horizontal lines
+    mvhline(y, x, ACS_HLINE, w);
+    mvhline(y + h - 1, x, ACS_HLINE, w);
+    // Draw vertical lines
+    mvvline(y, x, ACS_VLINE, h);
+    mvvline(y, x + w - 1, ACS_VLINE, h);
+    // Draw corners
+    mvaddch(y, x, ACS_ULCORNER);
+    mvaddch(y, x + w - 1, ACS_URCORNER);
+    mvaddch(y + h - 1, x, ACS_LLCORNER);
+    mvaddch(y + h - 1, x + w - 1, ACS_LRCORNER);
+}
+
 static void draw_ncurses(Game *g) {
     erase();
 
     // --- PANELS ---
 
-    // TOP LEFT: "SORTIE" (Small) & "TOTAL" (Larger)
-    // Box 1: SORTIE
-    attron(COLOR_PAIR(8)); // Cyan BG, Black Text? Or just Cyan Border
-    // Replicating image: "SORTIE" is a small tag on top of the box?
-    // Image: [SORTIE] box, then [TOTAL] box below.
+    // Box 1: SORTIE (Small top box)
+    attron(COLOR_PAIR(7)); // Cyan Borders
+    draw_fancy_box(0, 0, 3, 10);
+    mvprintw(1, 1, " SORTIE ");
 
-    // Sortie Tag
-    attron(COLOR_PAIR(7)); // Cyan
-    mvprintw(0, 0, "+--------+");
-    mvprintw(1, 0, "| SORTIE |");
-    mvprintw(2, 0, "+--------+");
-
-    // Total Box
-    mvprintw(3, 0, "+---------------------+");
-    mvprintw(4, 0, "| TOTAL A PAYER :     |");
-    mvprintw(5, 0, "| %6.2f EUR          |", g->total_revenue);
-    mvprintw(6, 0, "+---------------------+");
+    // Box 2: TOTAL (Larger box below)
+    draw_fancy_box(3, 0, 4, 25);
+    mvprintw(4, 2, "TOTAL A PAYER :");
+    mvprintw(5, 2, "%6.2f EUR", g->total_revenue);
     attroff(COLOR_PAIR(7));
 
     // BOTTOM RIGHT: "BONJOUR" (Large) & "ENTREE" (Small)
-    int my = g->map->hauteur + 2; // Offset below map
+    int my = g->map->hauteur + 2;
     int mx = g->map->largeur - 25;
     if (mx < 0) mx = 0;
 
-    // Bonjour Box
+    // Box 3: BONJOUR (Large)
     attron(COLOR_PAIR(7));
-    mvprintw(my, mx,   "+-----------------------+");
-    mvprintw(my+1, mx, "| BONJOUR :             |");
-    mvprintw(my+2, mx, "| PRENEZ VOTRE TICKET   |");
-    mvprintw(my+3, mx, "+-----------------------+");
+    draw_fancy_box(my, mx, 4, 30);
+    mvprintw(my+1, mx+2, "BONJOUR :");
+    mvprintw(my+2, mx+2, "PRENEZ VOTRE TICKET");
 
-    // Entree Tag
-    mvprintw(my+4, mx+13, "+--------+");
-    mvprintw(my+5, mx+13, "| ENTREE |");
-    mvprintw(my+6, mx+13, "+--------+");
+    // Box 4: ENTREE (Small tag attached to bottom right corner area?)
+    // Visual shows it adjacent or overlapping. Let's put it below.
+    draw_fancy_box(my+4, mx+18, 3, 12);
+    mvprintw(my+5, mx+20, "ENTREE");
     attroff(COLOR_PAIR(7));
 
     // --- MAP ---
     int offset_y = 4; // Below top panel
     int offset_x = 2; // Right of left border
+
+    // Draw Map Border
+    attron(COLOR_PAIR(1));
+    draw_fancy_box(offset_y-1, offset_x-1, g->map->hauteur+2, g->map->largeur+2);
+    attroff(COLOR_PAIR(1));
 
     for (int y = 0; y < g->map->hauteur; y++) {
         for (int x = 0; x < g->map->largeur; x++) {
@@ -405,35 +416,18 @@ static void draw_ncurses(Game *g) {
             }
 
             if (found) {
-                // Car Logic
                 int col = (found->type == 1) ? 4 : (found->id % 2 ? 9 : 10);
                 attron(COLOR_PAIR(col));
-                // Draw a box-like car?
-                // e.g. [ ]
-                mvaddch(py, px, ' ' | A_REVERSE); // Solid block of color
+                mvaddch(py, px, ' ' | A_REVERSE);
                 attroff(COLOR_PAIR(col));
-
-                // Add detail?
-                // mvaddch(py, px, ACS_DIAMOND);
             } else {
                 if (c == '#') {
-                    // Wall -> Cyan Line
-                    attron(COLOR_PAIR(1));
-                    // Simple logic for corners could be added here, but simple line is safer
-                    // Let's use ACS_HLINE / VLINE based on neighbors?
-                    // Too complex for now, use CKBOARD or #
-                    // Image shows thin lines.
-                    // Let's try to use standard ACS_HLINE if y is constant border?
-                    // Use a solid line char if available
-                    mvaddch(py, px, ACS_HLINE);
-                    // Actually HLINE looks weird for vertical walls.
-                    // Fallback to simple '#' or '+' if ACS logic is hard without neighbor context
-                    // Let's stick to ACS_CKBOARD or just a cyan space?
-                    // mvaddch(py, px, ' ' | A_REVERSE); // Solid cyan wall
-                    attroff(COLOR_PAIR(1));
+                    // Internal walls
+                     attron(COLOR_PAIR(1));
+                     mvaddch(py, px, ACS_CKBOARD); // Solid look
+                     attroff(COLOR_PAIR(1));
                 }
                 else if (c == 'P') {
-                    // Parking Spot -> Green Vertical Line
                     attron(COLOR_PAIR(2));
                     mvaddch(py, px, ACS_VLINE);
                     attroff(COLOR_PAIR(2));
@@ -443,18 +437,9 @@ static void draw_ncurses(Game *g) {
                     mvaddch(py, px, c);
                     attroff(COLOR_PAIR(5) | A_BLINK);
                 }
-                else {
-                     // Empty space
-                     // mvaddch(py, px, ' ');
-                }
             }
         }
     }
-
-    // Draw Map Border manually to look clean?
-    // attron(COLOR_PAIR(1));
-    // rectangle(offset_y-1, offset_x-1, offset_y+g->map->hauteur, offset_x+g->map->largeur);
-    // attroff(COLOR_PAIR(1));
 
     refresh();
 }
